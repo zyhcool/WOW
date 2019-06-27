@@ -4,25 +4,15 @@
         WeakMap,
         getComputedStyle,
         getComputedStyleRX,
-        bind = (fn, me) => {
-            return () => fn.apply(me, arguments);
-        };
 
     class Util {
         constructor() {
-            this.extend = this.extend.bind(this);
             this.isMobile = this.isMobile.bind(this);
             this.createEvent = this.createEvent.bind(this);
             this.emitEvent = this.emitEvent.bind(this);
             this.addEvent = this.addEvent.bind(this);
             this.removeEvent = this.removeEvent.bind(this);
             this.innerHeight = this.innerHeight.bind(this);
-        }
-        extend(custom, defaults) {
-            for (let key in defaults) {
-                custom[key] === null ? custom[key] = defaults[key] : null;
-                return custom;
-            }
         }
 
         isMobile(agent) {
@@ -115,7 +105,7 @@
     MutationObserver = this.MutationObserver || this.WebkitMutationObserver
 
     getComputedStyleRX = /(\-([a-z]){1})/g;
-    
+
     getComputedStyle = this.getComputedStyle || function (el, pseudo) {
         this.getPropertyValue = function (prop) {
             let ref = el.currentStyle;
@@ -128,5 +118,83 @@
             return ref ? ref[prop] : undefined;
         }
         return this;
+    }
+
+
+    class WOW {
+        constructor(options) {
+            this.scrollCallback = this.scrollCallback.bind(this);
+            this.scrollHandler = this.scrollHandler.bind(this);
+            this.resetAnimation = this.resetAnimation.bind(this);
+            this.start = this.start.bind(this);
+
+            if (!options) {
+                options = {};
+            }
+            this.defaults = {
+                boxClass: "wow",
+                animateClass: "animated",
+                offset: 0,
+                mobile: true,
+                live: true,
+                callback: null,
+                scrollContainter: null,
+            }
+            this.scrolled = true;
+            this.config = Object.assign({}, this.defaults, options);
+            this.wowEvent = this.util().createEvent(this.config.boxClass);
+            this.stopped = true;
+        }
+
+        init() {
+            this.rootElement = window.document.documentElement;
+            if (document.readyState === "interactive" || document.readyState === "complete") {
+                this.start();
+            } else {
+                this.util().addEvent(document, "DOMContentLoaded", this.start);
+            }
+            return this.finished = [];
+        }
+
+        start() {
+            this.stopped = false;
+            let ref = this.rootElement.querySelectorAll(`.${this.config.boxClass}`);
+            this.boxes = [...ref];
+            this.all = [...ref];
+            if (this.boxes.length) {
+                if (this.disabled()) {
+                    this.resetStyle();
+                } else {
+                    let ref = this.boxes;
+                    for (let i = 0, len = ref.length; i < len; i++) {
+                        this.applyStyle(ref[i], true);
+                    }
+                }
+            }
+            if (!this.disabled()) {
+                this.util().addEvent(this.config.scrollContainter || window, "scroll", this.scrollHandler);
+                this.util().addEvent(window, "resize", this.scrollHandler);
+                this.interval = setInterval(this.scrollCallback, 50);
+            }
+            if (this.config.live) {
+                let mutationObserver = new MutationObserver((records) => {
+                    let results = [];
+                    for (let i = 0, len = records.length; i < len; i++) {
+                        record = record[i];
+                        let addedNodes = record.addedNodes || [];
+                        let r1 = [];
+                        for (let j = 0, len = addedNodes.length; j < len; j++) {
+                            r1.push(this.doSync(addedNodes[j]))
+                        }
+
+                        results.push(r1);
+                    }
+                })
+                mutationObserver.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                });
+            }
+        }
     }
 })(this);
