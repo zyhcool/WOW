@@ -102,7 +102,23 @@
     }
     WeakMap = this.WeakMap || this.MozWeakMap || WeakMap;
 
-    MutationObserver = this.MutationObserver || this.WebkitMutationObserver
+    MutationObserver = this.MutationObserver || this.WebkitMutationObserver || this.MozMutationObserver || (MutationObserver = (function () {
+        function MutationObserver() {
+          if (typeof console !== "undefined" && console !== null) {
+            console.warn('MutationObserver is not supported by your browser.');
+          }
+          if (typeof console !== "undefined" && console !== null) {
+            console.warn('WOW.js cannot detect dom mutations, please call .sync() after loading new content.');
+          }
+        }
+    
+        MutationObserver.notSupported = true;
+    
+        MutationObserver.prototype.observe = function () { };
+    
+        return MutationObserver;
+    
+      })());
 
     getComputedStyleRX = /(\-([a-z]){1})/g;
 
@@ -194,6 +210,21 @@
                     childList: true,
                     subtree: true,
                 });
+            }
+        }
+
+        stop(){
+            this.stopped = true;
+            this.util().removeEvent(this.config.scrollContainter||window,"scroll",this.scrollHandler);
+            this.util().removeEvent(window,"resize",this.scrollHandler);
+            if(this.interval){
+                return clearInterval(this.interval);
+            }
+        }
+
+        sync(element){
+            if(MutationObserver.notSupported){
+                return this.doSync(this.rootElement);
             }
         }
     }
